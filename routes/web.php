@@ -1,9 +1,11 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\AdminDashboardController;
+use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\PetugasDashboardController;
 
 /*
@@ -24,8 +26,7 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-
-
+Route::prefix('admin')->group(function () {});
 
 Route::get('/login', [LoginController::class, 'index'])->name('login');
 Route::post('/login', [LoginController::class, 'authenticate']);
@@ -38,8 +39,21 @@ Route::post('/register', [RegisterController::class, 'store']);
 
 
 Route::middleware(['auth', 'role:Admin'])
-    ->get('/admin', [AdminDashboardController::class, 'index'])
-    ->name('admin.dashboard');
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        // Dashboard
+        Route::get('/', [AdminDashboardController::class, 'index'])
+            ->name('dashboard');
+
+        // Kategori Produk
+        Route::resource('categories', ProductCategoryController::class);
+
+        // Produk
+        Route::resource('products', ProductController::class);
+    });
+
+
 
 
 Route::middleware(['auth', 'role:Petugas'])
