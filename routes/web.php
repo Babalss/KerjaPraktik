@@ -3,10 +3,13 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Admin\BlogTagController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Admin\BlogPostController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\ProductCategoryController;
 use App\Http\Controllers\PetugasDashboardController;
+use App\Http\Controllers\Admin\BlogCategoryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -51,6 +54,18 @@ Route::middleware(['auth', 'role:Admin'])
 
         // Produk
         Route::resource('products', ProductController::class);
+
+
+        // BLOG
+        Route::resource('blog/categories', BlogCategoryController::class)
+            ->names('blog.categories'); // admin.blog.categories.*
+
+        Route::resource('blog/tags', BlogTagController::class)
+            ->names('blog.tags');       // admin.blog.tags.*
+
+        Route::resource('blog/posts', BlogPostController::class)
+            ->names('blog.posts');      // admin.blog.posts.*
+
     });
 
 

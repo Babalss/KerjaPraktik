@@ -225,13 +225,13 @@
                 </div>
             </div>
 
-
             <nav class="nav-section">
+                {{-- Dashboard --}}
                 <a href="{{ route('admin.dashboard') }}" class="{{ request()->is('admin/dashboard') ? 'active' : '' }}">
                     <i class="bi bi-speedometer2"></i> Dashboard
                 </a>
 
-
+                {{-- Produk --}}
                 @php
                     $productMenuActive = request()->is('admin/products*') || request()->is('admin/categories*');
                 @endphp
@@ -243,7 +243,6 @@
                         <i class="bi bi-chevron-down small"></i>
                     </a>
 
-
                     <div class="collapse submenu {{ $productMenuActive ? 'show' : '' }}" id="productsMenu">
                         <a href="{{ route('admin.products.index') }}" class="nav-link {{ request()->is('admin/products*') ? 'active' : '' }}">
                             <i class="bi bi-box me-1"></i> Semua Produk
@@ -253,19 +252,49 @@
                         </a>
                     </div>
                 </div>
+
+                {{-- Blog --}}
+                @php
+                    $blogMenuActive = request()->is('admin/blog*');
+                @endphp
+                <div>
+                    <a class="nav-link d-flex justify-content-between align-items-center {{ $blogMenuActive ? 'active' : '' }}"
+                       data-bs-toggle="collapse" href="#blogMenu"
+                       aria-expanded="{{ $blogMenuActive ? 'true' : 'false' }}">
+                        <span><i class="bi bi-journal-text me-1"></i> Blog</span>
+                        <i class="bi bi-chevron-down small"></i>
+                    </a>
+
+                    <div class="collapse submenu {{ $blogMenuActive ? 'show' : '' }}" id="blogMenu">
+                        <a href="{{ route('admin.blog.posts.index') }}" class="nav-link {{ request()->is('admin/blog/posts*') ? 'active' : '' }}">
+                            <i class="bi bi-file-earmark-text me-1"></i> Postingan
+                        </a>
+                        <a href="{{ route('admin.blog.categories.index') }}" class="nav-link {{ request()->is('admin/blog/categories*') ? 'active' : '' }}">
+                            <i class="bi bi-journal-bookmark me-1"></i> Kategori
+                        </a>
+                        <a href="{{ route('admin.blog.tags.index') }}" class="nav-link {{ request()->is('admin/blog/tags*') ? 'active' : '' }}">
+                            <i class="bi bi-tags me-1"></i> Tag
+                        </a>
+                    </div>
+                </div>
             </nav>
         </div>
     </aside>
 
-
     {{-- Overlay for mobile --}}
     <div id="overlay" class="overlay"></div>
 
-
     {{-- Navbar --}}
     <header class="navbar">
-        <button id="menu-toggle" class="toggler-btn d-lg-none"><i class="bi bi-list"></i></button>
-        <div class="brand-sm"><svg width="20" height="20" viewBox="0 0 24 24" fill="#0b5394" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L2 7h20L12 2z"/><path d="M2 9v11h20V9H2z" opacity="0.9"/></svg> PLN Asuransi</div>
+        <button id="menu-toggle" class="toggler-btn d-lg-none">
+            <i class="bi bi-list"></i>
+        </button>
+        <div class="brand-sm">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="#0b5394" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L2 7h20L12 2z"/>
+                <path d="M2 9v11h20V9H2z" opacity="0.9"/>
+            </svg> PLN Asuransi
+        </div>
         <div class="dropdown ms-auto">
             <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle" data-bs-toggle="dropdown">
                 <i class="bi bi-person-circle fs-4 text-primary"></i>
@@ -285,28 +314,23 @@
         </div>
     </header>
 
-
     {{-- Main content --}}
     <main class="content">
         @yield('content')
     </main>
-
 
     {{-- Footer --}}
     <footer class="app-footer">
         &copy; {{ date('Y') }} PLN Asuransi. All rights reserved.
     </footer>
 
-
     {{-- Bootstrap JS --}}
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
 
     <script>
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('overlay');
         const toggle = document.getElementById('menu-toggle');
-
 
         toggle.addEventListener('click', () => {
             sidebar.classList.toggle('open');
@@ -318,4 +342,5 @@
         });
     </script>
 </body>
+
 </html>
