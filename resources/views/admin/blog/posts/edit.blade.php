@@ -14,9 +14,7 @@
       <select name="category_id" class="form-control" required>
         <option value="">-- Pilih Kategori --</option>
         @foreach($categories as $cat)
-          <option value="{{ $cat->id }}" @selected(old('category_id', $item->category_id) == $cat->id)>
-            {{ $cat->name }}
-          </option>
+          <option value="{{ $cat->id }}" @selected(old('category_id', $item->category_id) == $cat->id)>{{ $cat->name }}</option>
         @endforeach
       </select>
       @error('category_id') <div class="text-danger small">{{ $message }}</div> @enderror
@@ -25,14 +23,14 @@
     {{-- Judul --}}
     <div class="mb-3">
       <label class="form-label">Judul</label>
-      <input type="text" name="title" class="form-control" value="{{ old('title', $item->title) }}" required>
+      <input type="text" name="title" id="title" class="form-control" value="{{ old('title', $item->title) }}" required>
       @error('title') <div class="text-danger small">{{ $message }}</div> @enderror
     </div>
 
-    {{-- Slug --}}
+    {{-- Slug (opsional, otomatis jika dikosongkan) --}}
     <div class="mb-3">
-      <label class="form-label">Slug</label>
-      <input type="text" name="slug" class="form-control" value="{{ old('slug', $item->slug) }}" required>
+      <label class="form-label">Slug <small class="text-muted">(otomatis jika kosong)</small></label>
+      <input type="text" name="slug" id="slug" class="form-control" value="{{ old('slug', $item->slug) }}" placeholder="(otomatis)">
       @error('slug') <div class="text-danger small">{{ $message }}</div> @enderror
     </div>
 
@@ -42,28 +40,24 @@
       <input type="text" name="excerpt" class="form-control" value="{{ old('excerpt', $item->excerpt) }}">
     </div>
 
- {{-- Upload Gambar & Preview --}}
-<div class="mb-3">
-  <label class="form-label">Gambar Hero</label>
+    {{-- Upload Gambar & Preview --}}
+    <div class="mb-3">
+      <label class="form-label">Gambar Hero</label>
 
-  {{-- Preview gambar lama jika ada --}}
-  @if($item->hero_image)
-    <div class="mb-2">
-      <p class="mb-1">Gambar saat ini:</p>
-      <img src="{{ asset('storage/' . $item->hero_image) }}" 
-           alt="Hero Image" 
-           class="img-fluid rounded shadow-sm" 
-           style="max-height: 250px;">
+      @if($item->hero_image)
+        <div class="mb-2">
+          <p class="mb-1">Gambar saat ini:</p>
+          <img src="{{ asset('storage/' . $item->hero_image) }}"
+               alt="Hero Image"
+               class="img-fluid rounded shadow-sm"
+               style="max-height: 250px;">
+        </div>
+      @endif
+
+      <input type="file" name="hero_image" class="form-control" accept="image/*">
+      <small class="text-muted">Kosongkan jika tidak ingin mengubah gambar.</small>
+      @error('hero_image') <div class="text-danger small">{{ $message }}</div> @enderror
     </div>
-  @endif
-
-  {{-- Input upload baru --}}
-  <input type="file" name="hero_image" class="form-control" accept="image/*">
-  <small class="text-muted">Kosongkan jika tidak ingin mengubah gambar.</small>
-  @error('hero_image') <div class="text-danger small">{{ $message }}</div> @enderror
-</div>
-
-
 
     {{-- Konten --}}
     <div class="mb-3">
@@ -110,3 +104,21 @@
   </form>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+  // Bantu generate slug ketika slug kosong & user belum mengubahnya sendiri
+  const toSlug = s => s.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9\s-]/g,'').trim().replace(/\s+/g,'-').replace(/-+/g,'-');
+  const $title = document.querySelector('#title');
+  const $slug  = document.querySelector('#slug');
+  if ($title && $slug) {
+    let touched = $slug.value.length > 0;
+    $slug.addEventListener('input', ()=> touched = true);
+    $title.addEventListener('input', ()=>{
+      if (!touched && !$slug.value) $slug.value = toSlug($title.value);
+    });
+  }
+</script>
+@endpush

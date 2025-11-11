@@ -2,44 +2,75 @@
 @section('content')
 <div class="container mt-4">
     <h2>Edit Produk Asuransi</h2>
+
     <form action="{{ route('admin.products.update', $product->id) }}" method="POST">
         @csrf
         @method('PUT')
+
         <div class="mb-3">
             <label for="category_id" class="form-label">Kategori</label>
-            <select name="category_id" class="form-control" required>
+            <select name="category_id" id="category_id" class="form-control" required>
                 @foreach ($categories as $cat)
-                <option value="{{ $cat->id }}" {{ $product->category_id == $cat->id ? 'selected' : '' }}>
-                    {{ $cat->name }}
-                </option>
+                    <option value="{{ $cat->id }}" @selected($product->category_id == $cat->id)>{{ $cat->name }}</option>
                 @endforeach
             </select>
+            @error('category_id') <div class="text-danger small">{{ $message }}</div> @enderror
         </div>
+
         <div class="mb-3">
             <label for="name" class="form-label">Nama Produk</label>
-            <input type="text" name="name" class="form-control" value="{{ $product->name }}" required>
+            <input type="text" name="name" id="name" class="form-control" value="{{ old('name',$product->name) }}" required>
+            @error('name') <div class="text-danger small">{{ $message }}</div> @enderror
         </div>
+
         <div class="mb-3">
-            <label for="slug" class="form-label">Slug</label>
-            <input type="text" name="slug" class="form-control" value="{{ $product->slug }}" required>
+            <label for="slug" class="form-label">Slug (opsional)</label>
+            <input type="text" name="slug" id="slug" class="form-control" value="{{ old('slug',$product->slug) }}" placeholder="otomatis jika dikosongkan">
+            @error('slug') <div class="text-danger small">{{ $message }}</div> @enderror
         </div>
+
         <div class="mb-3">
             <label for="short_description" class="form-label">Deskripsi Singkat</label>
-            <input type="text" name="short_description" class="form-control" value="{{ $product->short_description }}">
+            <input type="text" name="short_description" id="short_description" class="form-control" value="{{ old('short_description',$product->short_description) }}">
+            @error('short_description') <div class="text-danger small">{{ $message }}</div> @enderror
         </div>
+
         <div class="mb-3">
             <label for="long_description" class="form-label">Deskripsi Lengkap</label>
-            <textarea name="long_description" rows="4" class="form-control">{{ $product->long_description }}</textarea>
+            <textarea name="long_description" id="long_description" rows="4" class="form-control">{{ old('long_description',$product->long_description) }}</textarea>
+            @error('long_description') <div class="text-danger small">{{ $message }}</div> @enderror
         </div>
+
         <div class="mb-3">
             <label for="status" class="form-label">Status</label>
-            <select name="status" class="form-control">
-                <option value="active" {{ $product->status == 'active' ? 'selected' : '' }}>Aktif</option>
-                <option value="inactive" {{ $product->status == 'inactive' ? 'selected' : '' }}>Nonaktif</option>
+            <select name="status" id="status" class="form-control">
+                <option value="active" @selected(old('status',$product->status)==='active')>Aktif</option>
+                <option value="inactive" @selected(old('status',$product->status)==='inactive')>Nonaktif</option>
             </select>
+            @error('status') <div class="text-danger small">{{ $message }}</div> @enderror
         </div>
+
         <button type="submit" class="btn btn-primary">Update</button>
         <a href="{{ route('admin.products.index') }}" class="btn btn-secondary">Batal</a>
     </form>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const nameEl = document.getElementById('name');
+  const slugEl = document.getElementById('slug');
+  if(!nameEl || !slugEl) return;
+
+  let dirty = slugEl.value.trim().length > 0;
+  slugEl.addEventListener('input', () => dirty = slugEl.value.trim().length > 0);
+
+  const slugify = s => s.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'').replace(/-+/g,'-');
+
+  nameEl.addEventListener('input', () => { if(!dirty) slugEl.value = slugify(nameEl.value); });
+});
+</script>
+@endpush

@@ -10,8 +10,6 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\File;
-
 
 class BlogPostController extends Controller
 {
@@ -24,7 +22,7 @@ class BlogPostController extends Controller
         $items = BlogPost::with(['category', 'author'])
             ->when($q, fn($s) => $s->where(function ($qq) use ($q) {
                 $qq->where('title', 'like', "%$q%")
-                    ->orWhere('slug', 'like', "%$q%");
+                   ->orWhere('slug', 'like', "%$q%");
             }))
             ->orderByDesc('id')
             ->paginate(10)
@@ -48,14 +46,11 @@ class BlogPostController extends Controller
     /**
      * Simpan post baru ke database
      */
-
-    // ...
-
     public function store(Request $r)
     {
         $data = $r->validate([
             'title'        => ['required', 'string', 'max:200'],
-            'slug'         => ['required', 'string', 'max:200', 'unique:blog_posts,slug'],
+            'slug'         => ['nullable', 'string', 'max:200', 'unique:blog_posts,slug'],
             'excerpt'      => ['nullable', 'string'],
             'hero_image'   => ['nullable', 'file', 'image', 'max:2048'],
             'content'      => ['required', 'string'],
@@ -68,17 +63,13 @@ class BlogPostController extends Controller
 
         $data['author_id'] = auth()->id();
 
-        // Simpan gambar ke storage/app/public/blog
+        // Upload gambar (opsional)
         if ($r->hasFile('hero_image')) {
             $file = $r->file('hero_image');
-
-            // buat nama file unik: timestamp + slug
             $filename = time() . '-' . Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME))
                 . '.' . $file->getClientOriginalExtension();
-
-            // simpan di folder blog (disk public)
             $path = $file->storeAs('blog', $filename, 'public');
-            $data['hero_image'] = $path; // simpan path relatif
+            $data['hero_image'] = $path;
         }
 
         $post = BlogPost::create($data);
@@ -87,7 +78,9 @@ class BlogPostController extends Controller
         return redirect()->route('admin.blog.posts.index')->with('ok', 'Post berhasil dibuat.');
     }
 
-
+    /**
+     * Form edit
+     */
     public function edit(BlogPost $post)
     {
         $item = $post;
@@ -105,7 +98,7 @@ class BlogPostController extends Controller
     {
         $data = $r->validate([
             'title'        => ['required', 'string', 'max:200'],
-            'slug'         => ['required', 'string', 'max:200', Rule::unique('blog_posts', 'slug')->ignore($post->id)],
+            'slug'         => ['nullable', 'string', 'max:200', Rule::unique('blog_posts', 'slug')->ignore($post->id)],
             'excerpt'      => ['nullable', 'string'],
             'hero_image'   => ['nullable', 'file', 'image', 'max:2048'],
             'content'      => ['required', 'string'],
@@ -116,13 +109,11 @@ class BlogPostController extends Controller
             'tag_ids.*'    => ['integer', 'exists:blog_tags,id'],
         ]);
 
-        // Upload file baru jika ada
+        // Jika upload gambar baru, hapus yang lama
         if ($r->hasFile('hero_image')) {
-            // Hapus gambar lama
             if ($post->hero_image && Storage::disk('public')->exists($post->hero_image)) {
                 Storage::disk('public')->delete($post->hero_image);
             }
-
             $file = $r->file('hero_image');
             $filename = time() . '-' . Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME))
                 . '.' . $file->getClientOriginalExtension();
@@ -136,18 +127,16 @@ class BlogPostController extends Controller
         return redirect()->route('admin.blog.posts.index')->with('ok', 'Post berhasil diperbarui.');
     }
 
-
     /**
-     * Hapus post dari database
+     * Hapus post
      */
     public function destroy(BlogPost $post)
     {
-        // Hapus gambar terkait jika ada
         if ($post->hero_image && Storage::disk('public')->exists($post->hero_image)) {
             Storage::disk('public')->delete($post->hero_image);
         }
-
         $post->delete();
+
         return back()->with('ok', 'Post berhasil dihapus.');
     }
 }

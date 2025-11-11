@@ -22,14 +22,14 @@
     {{-- Judul --}}
     <div class="mb-3">
       <label class="form-label">Judul</label>
-      <input type="text" name="title" class="form-control" value="{{ old('title') }}" required>
+      <input type="text" name="title" id="title" class="form-control" value="{{ old('title') }}" required>
       @error('title') <div class="text-danger small">{{ $message }}</div> @enderror
     </div>
 
-    {{-- Slug --}}
+    {{-- Slug (opsional, otomatis jika dikosongkan) --}}
     <div class="mb-3">
-      <label class="form-label">Slug</label>
-      <input type="text" name="slug" class="form-control" value="{{ old('slug') }}" required>
+      <label class="form-label">Slug <small class="text-muted">(otomatis jika kosong)</small></label>
+      <input type="text" name="slug" id="slug" class="form-control" value="{{ old('slug') }}" placeholder="(otomatis)">
       @error('slug') <div class="text-danger small">{{ $message }}</div> @enderror
     </div>
 
@@ -66,9 +66,7 @@
 
       <div class="col-md-4">
         <label class="form-label">Tanggal Publish (opsional)</label>
-        <input type="datetime-local" name="published_at"
-               value="{{ old('published_at') }}"
-               class="form-control">
+        <input type="datetime-local" name="published_at" value="{{ old('published_at') }}" class="form-control">
       </div>
 
       <div class="col-md-4">
@@ -89,3 +87,21 @@
   </form>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+  // Preview slug otomatis saat mengetik judul (tidak memaksa; user bisa override)
+  const toSlug = s => s.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9\s-]/g,'').trim().replace(/\s+/g,'-').replace(/-+/g,'-');
+  const $title = document.querySelector('#title');
+  const $slug  = document.querySelector('#slug');
+  if ($title && $slug) {
+    let touched = false;
+    $slug.addEventListener('input', ()=> touched = true);
+    $title.addEventListener('input', ()=>{
+      if (!touched && !$slug.value) $slug.value = toSlug($title.value);
+    });
+  }
+</script>
+@endpush

@@ -1,0 +1,276 @@
+:root {
+  /* ===== Warna Utama ===== */
+  --sidebar-bg: #0b5394;
+  --sidebar-accent: #08457e;
+  --text-muted: #6c757d;
+  --active-sub-bg: rgba(255, 255, 255, 0.15);
+  --border-color: #e9edf2;
+
+  /* ===== Dimensi ===== */
+  --sidebar-w: 240px;
+  --navbar-h: 64px; /* tinggi header sidebar & navbar sama */
+}
+
+/* ===== Reset Kecil ===== */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  background: #f5f7fb;
+  font-family: "Segoe UI", Roboto, Arial, sans-serif;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+body.no-scroll {
+  overflow: hidden;
+}
+
+/* =========================================================
+   SIDEBAR
+   ========================================================= */
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--sidebar-bg);
+  color: #fff;
+  position: fixed;
+  inset: 0 auto 0 0;
+  overflow-y: auto;
+  transition: left 0.25s ease;
+  z-index: 1035;
+}
+
+.sidebar-inner {
+  padding-bottom: 80px;
+}
+
+.sidebar .brand {
+  height: var(--navbar-h);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0 1rem;
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.sidebar .brand h5 {
+  margin: 0;
+  font-weight: 700;
+  font-size: 1rem;
+  color: #fff;
+}
+
+/* ===== Navigasi Sidebar ===== */
+.nav-section {
+  padding: 0.75rem 0;
+}
+
+.nav-section a,
+.nav-section .nav-link {
+  color: #e7f0ff;
+  padding: 0.65rem 1rem;
+  margin: 0.2rem 0.7rem;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.05s ease;
+}
+
+.nav-section a:hover {
+  background: var(--sidebar-accent);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.nav-section a.active {
+  background: var(--sidebar-accent);
+  color: #fff;
+}
+
+.nav-section .group {
+  margin-bottom: 0.35rem;
+}
+
+/* ===== Submenu ===== */
+.submenu .nav-link {
+  padding-left: 2.3rem;
+  font-weight: 500;
+  color: #dbe8ff;
+  border-radius: 6px;
+  margin-bottom: 0.2rem;
+}
+
+.submenu .nav-link.active {
+  background: var(--active-sub-bg);
+  color: #fff;
+}
+
+.submenu .nav-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+/* =========================================================
+   NAVBAR
+   ========================================================= */
+.app-navbar {
+  position: fixed;
+  top: 0;
+  left: var(--sidebar-w);
+  right: 0;
+  height: var(--navbar-h);
+  background: #fff;
+  display: flex;
+  align-items: center;
+  padding: 0 0.9rem;
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: none;
+  z-index: 1025;
+  transition: left 0.25s ease;
+}
+
+.app-navbar .toggler-btn {
+  border: 0;
+  background: transparent;
+  font-size: 1.6rem;
+  color: var(--sidebar-bg);
+}
+
+.app-navbar .brand-sm {
+  display: none;
+  align-items: center;
+  font-weight: 700;
+}
+
+/* =========================================================
+   KONTEN & FOOTER
+   ========================================================= */
+.content {
+  margin-left: var(--sidebar-w);
+  padding: calc(var(--navbar-h) + 28px) 1rem 100px;
+  transition: margin-left 0.25s ease;
+  flex: 1;
+}
+
+.app-footer {
+  position: fixed;
+  bottom: 0;
+  left: var(--sidebar-w);
+  right: 0;
+  background: #fff;
+  padding: 0.8rem;
+  border-top: 1px solid #edf0f3;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  transition: left 0.25s ease;
+  z-index: 1025;
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+@media (max-width: 992px) {
+  .sidebar {
+    left: -260px;
+  }
+
+  .sidebar.open {
+    left: 0;
+  }
+
+  .app-navbar {
+    left: 0;
+  }
+
+  .content {
+    margin-left: 0;
+    padding-top: calc(var(--navbar-h) + 20px);
+  }
+
+  .app-footer {
+    left: 0;
+  }
+
+  .app-navbar .brand-sm {
+    display: flex;
+    margin-left: 0.5rem;
+  }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 1030;
+    display: none;
+  }
+
+  .overlay.show {
+    display: block;
+  }
+}
+
+/* =========================================================
+   SENTUHAN VISUAL UMUM
+   ========================================================= */
+.card {
+  border: 0;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06);
+}
+
+.card .card-body {
+  padding: 1rem 1.1rem;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5 {
+  color: #0b5394;
+}
+
+
+/* =======================
+   ICON BACKGROUND BULAT
+   ======================= */
+.icon-circle {
+  width: 64px;                /* diameter tetap */
+  height: 64px;
+  border-radius: 50%;         /* bikin benar-benar bulat */
+  display: flex;              /* center icon */
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;             /* jangan menyusut */
+}
+
+/* Ukuran icon di dalamnya */
+.icon-circle i {
+  font-size: 28px;            /* ukuran ikon tetap proporsional */
+}
+
+/* Responsif (kecilkan di mobile) */
+@media (max-width: 576px) {
+  .icon-circle {
+    width: 56px;
+    height: 56px;
+  }
+  .icon-circle i {
+    font-size: 24px;
+  }
+}

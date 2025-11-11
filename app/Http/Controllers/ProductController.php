@@ -10,103 +10,98 @@ use Illuminate\Support\Str;
 class ProductController extends Controller
 {
     /**
-     * Menampilkan daftar semua produk.
+     * Menampilkan daftar semua produk (dengan pencarian & pagination).
      */
-    public function index()
+    public function index(Request $request)
     {
-        $products = Product::with('category')->latest()->get();
+        $q = $request->get('q');
 
-        return view('admin.products.index', compact('products'));
+        $products = Product::with('category')
+            ->search($q)          // <- scope dari model
+            ->latest('id')
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('admin.products.index', compact('products', 'q'));
     }
 
-    /**
-     * Menampilkan form untuk membuat produk baru.
-     */
     public function create()
     {
         $categories = ProductCategory::all();
-
         return view('admin.products.create', compact('categories'));
     }
 
-    /**
-     * Menyimpan produk baru ke database.
-     */
     public function store(Request $request)
     {
         $request->validate([
-            'category_id' => 'required|exists:product_categories,id',
-            'name' => 'required|string|max:255',
-            'slug' => 'required|string|max:255|unique:products,slug',
-            'short_description' => 'nullable|string|max:500',
-            'long_description' => 'nullable|string',
-            'status' => 'in:active,inactive',
+            'category_id'        => 'required|exists:product_categories,id',
+            'name'               => 'required|string|max:255',
+            'slug'               => 'nullable|string|max:255|unique:products,slug',
+            'short_description'  => 'nullable|string|max:500',
+            'long_description'   => 'nullable|string',
+            'status'             => 'in:active,inactive',
         ]);
+
+        $slug = $request->filled('slug')
+            ? Str::slug($request->slug)
+            : Str::slug($request->name);
 
         Product::create([
-            'category_id' => $request->category_id,
-            'name' => $request->name,
-            'slug' => Str::slug($request->slug),
-            'short_description' => $request->short_description,
-            'long_description' => $request->long_description,
-            'status' => $request->status ?? 'active',
+            'category_id'        => $request->category_id,
+            'name'               => $request->name,
+            'slug'               => $slug,
+            'short_description'  => $request->short_description,
+            'long_description'   => $request->long_description,
+            'status'             => $request->status ?? 'active',
         ]);
 
-        return redirect()
-            ->route('admin.products.index')
+        return redirect()->route('admin.products.index')
             ->with('success', 'Produk berhasil ditambahkan');
     }
 
-    /**
-     * Menampilkan form untuk mengedit produk.
-     */
     public function edit($id)
     {
-        $product = Product::findOrFail($id);
+        $product    = Product::findOrFail($id);
         $categories = ProductCategory::all();
 
         return view('admin.products.edit', compact('product', 'categories'));
     }
 
-    /**
-     * Memperbarui data produk di database.
-     */
     public function update(Request $request, $id)
     {
         $product = Product::findOrFail($id);
 
         $request->validate([
-            'category_id' => 'required|exists:product_categories,id',
-            'name' => 'required|string|max:255',
-            'slug' => 'required|string|max:255|unique:products,slug,' . $product->id,
-            'short_description' => 'nullable|string|max:500',
-            'long_description' => 'nullable|string',
-            'status' => 'in:active,inactive',
+            'category_id'        => 'required|exists:product_categories,id',
+            'name'               => 'required|string|max:255',
+            'slug'               => 'nullable|string|max:255|unique:products,slug,' . $product->id,
+            'short_description'  => 'nullable|string|max:500',
+            'long_description'   => 'nullable|string',
+            'status'             => 'in:active,inactive',
         ]);
+
+        $slug = $request->filled('slug')
+            ? Str::slug($request->slug)
+            : Str::slug($request->name);
 
         $product->update([
-            'category_id' => $request->category_id,
-            'name' => $request->name,
-            'slug' => Str::slug($request->slug),
-            'short_description' => $request->short_description,
-            'long_description' => $request->long_description,
-            'status' => $request->status ?? 'active',
+            'category_id'        => $request->category_id,
+            'name'               => $request->name,
+            'slug'               => $slug,
+            'short_description'  => $request->short_description,
+            'long_description'   => $request->long_description,
+            'status'             => $request->status ?? 'active',
         ]);
 
-        return redirect()
-            ->route('admin.products.index')
+        return redirect()->route('admin.products.index')
             ->with('success', 'Produk berhasil diperbarui');
     }
 
-    /**
-     * Menghapus produk dari database.
-     */
     public function destroy($id)
     {
         Product::findOrFail($id)->delete();
 
-        return redirect()
-            ->route('admin.products.index')
+        return redirect()->route('admin.products.index')
             ->with('success', 'Produk berhasil dihapus');
     }
 }

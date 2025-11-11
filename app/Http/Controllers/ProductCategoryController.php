@@ -11,11 +11,25 @@ class ProductCategoryController extends Controller
     /**
      * Menampilkan daftar semua kategori produk.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $categories = ProductCategory::all();
+        $q = $request->get('q');
 
-        return view('admin.categories.index', compact('categories'));
+        $categories = ProductCategory::query()
+            ->when(
+                $q,
+                fn($query) =>
+                $query->where(
+                    fn($x) =>
+                    $x->where('name', 'like', "%{$q}%")
+                        ->orWhere('slug', 'like', "%{$q}%")
+                )
+            )
+            ->orderByDesc('id')
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('admin.categories.index', compact('categories', 'q'));
     }
 
     /**
@@ -23,7 +37,6 @@ class ProductCategoryController extends Controller
      */
     public function create()
     {
-
         return view('admin.categories.create');
     }
 
@@ -34,13 +47,18 @@ class ProductCategoryController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'slug' => 'required|string|max:255|unique:product_categories,slug',
+            'slug' => 'nullable|string|max:255|unique:product_categories,slug',
             'description' => 'nullable|string',
         ]);
 
+        // Jika slug kosong, buat otomatis dari name
+        $slug = $request->filled('slug')
+            ? Str::slug($request->slug)
+            : Str::slug($request->name);
+
         ProductCategory::create([
-            'name' => $request->name,
-            'slug' => Str::slug($request->slug),
+            'name'        => $request->name,
+            'slug'        => $slug,
             'description' => $request->description,
         ]);
 
@@ -68,13 +86,18 @@ class ProductCategoryController extends Controller
 
         $request->validate([
             'name' => 'required|string|max:255',
-            'slug' => 'required|string|max:255|unique:product_categories,slug,' . $category->id,
+            'slug' => 'nullable|string|max:255|unique:product_categories,slug,' . $category->id,
             'description' => 'nullable|string',
         ]);
 
+        // Jika slug kosong, buat otomatis dari name
+        $slug = $request->filled('slug')
+            ? Str::slug($request->slug)
+            : Str::slug($request->name);
+
         $category->update([
-            'name' => $request->name,
-            'slug' => Str::slug($request->slug),
+            'name'        => $request->name,
+            'slug'        => $slug,
             'description' => $request->description,
         ]);
 

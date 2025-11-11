@@ -9,11 +9,6 @@ class Product extends Model
 {
     use HasFactory;
 
-    /**
-     * Atribut yang dapat diisi secara massal.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
         'category_id',
         'name',
@@ -23,11 +18,23 @@ class Product extends Model
         'status',
     ];
 
-    /**
-     * Relasi ke kategori produk.
-     */
     public function category()
     {
         return $this->belongsTo(ProductCategory::class, 'category_id');
+    }
+
+    /**
+     * Scope pencarian sederhana (nama/slug/deskripsi singkat)
+     */
+    public function scopeSearch($q, ?string $term)
+    {
+        if (!$term) return $q;
+        $term = "%{$term}%";
+
+        return $q->where(function ($s) use ($term) {
+            $s->where('name', 'LIKE', $term)
+              ->orWhere('slug', 'LIKE', $term)
+              ->orWhere('short_description', 'LIKE', $term);
+        });
     }
 }
