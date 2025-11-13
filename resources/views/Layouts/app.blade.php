@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PLN Insurance - Admin Panel</title>
+  <title>@yield('title', 'PLN Insurance - Admin Panel')</title>
 
   {{-- Bootstrap & Icons --}}
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -12,28 +11,30 @@
 
   {{-- CSS kustom (lokasi di public/css) --}}
   <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+  {{-- (opsional) tempat push style tambahan --}}
+  @stack('styles')
+
+  {{-- font --}}
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
 </head>
 
-
-</head>
 <body>
-
   {{-- Sidebar --}}
   <aside id="sidebar" class="sidebar">
-  <div class="sidebar-inner">
-  <div class="brand d-flex align-items-center gap-2">
-    <svg width="30" height="30" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <path d="M12 2L2 7h20L12 2z" fill="white"/>
-      <path d="M2 9v11h20V9H2z" fill="white" opacity="0.95"/>
-    </svg>
-
-    <div class="d-flex flex-column lh-sm">
-      <h5 class="mb-0 fw-bold text-white">
-        PLN <span class="fw-bold text-white">Insurance</span>
-      </h5>
-      <small class="text-white-50">Admin Panel</small>
-    </div>
-  </div>
+    <div class="sidebar-inner">
+      <div class="brand d-flex align-items-center gap-2">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M12 2L2 7h20L12 2z" fill="white"/>
+          <path d="M2 9v11h20V9H2z" fill="white" opacity="0.95"/>
+        </svg>
+        <div class="d-flex flex-column lh-sm">
+          <h5 class="mb-0 fw-bold text-white">
+            PLN <span class="fw-bold text-white">Insurance</span>
+          </h5>
+          <small class="text-white-50">Admin Panel</small>
+        </div>
+      </div>
 
       <nav class="nav-section">
         {{-- Dashboard --}}
@@ -94,20 +95,19 @@
   {{-- Overlay (mobile) --}}
   <div id="overlay" class="overlay" aria-hidden="true"></div>
 
-  {{-- Navbar custom (bukan .navbar Bootstrap) --}}
+  {{-- Navbar --}}
   <header class="app-navbar">
     <button id="menu-toggle" class="toggler-btn d-lg-none" aria-label="Buka menu">
       <i class="bi bi-list"></i>
     </button>
 
- <div class="brand-sm d-lg-none text-white fw-semibold">
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-    <path d="M12 2L2 7h20L12 2z"/>
-    <path d="M2 9v11h20V9H2z" opacity="0.9"/>
-  </svg>
-  PLN Insurance
-</div>
-
+    <div class="brand-sm d-lg-none text-white fw-semibold">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M12 2L2 7h20L12 2z"/>
+        <path d="M2 9v11h20V9z" opacity="0.9"/>
+      </svg>
+      PLN Insurance
+    </div>
 
     <div class="ms-auto dropdown">
       <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle" data-bs-toggle="dropdown">
@@ -140,9 +140,10 @@
   {{-- Bootstrap Bundle --}}
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-  {{-- JS kustom (lokasi di public/js) --}}
+  {{-- JS kustom --}}
   <script src="{{ asset('js/app.js') }}"></script>
 
-</body>
+  {{-- INI PENTING: tempat semua @push('scripts') dari halaman --}}
+  @stack('scripts')
 </body>
 </html>

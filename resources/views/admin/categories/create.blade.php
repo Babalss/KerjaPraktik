@@ -2,76 +2,76 @@
 
 @section('content')
 <div class="container mt-4">
-    <h2>Tambah Kategori Produk</h2>
+  <h2>Tambah Kategori Produk</h2>
 
-    <form action="{{ route('admin.categories.store') }}" method="POST">
-        @csrf
+  <form action="{{ route('admin.categories.store') }}" method="POST" enctype="multipart/form-data">
+    @csrf
 
-        {{-- Nama Kategori --}}
-        <div class="mb-3">
-            <label for="name" class="form-label">Nama Kategori</label>
-            <input 
-                type="text" 
-                name="name" 
-                id="name" 
-                class="form-control" 
-                value="{{ old('name') }}" 
-                required
-                autofocus>
-            @error('name') 
-                <div class="text-danger small">{{ $message }}</div> 
-            @enderror
-        </div>
+    {{-- Nama --}}
+    <div class="mb-3">
+      <label for="name" class="form-label">Nama Kategori</label>
+      <input type="text" name="name" id="name" class="form-control" value="{{ old('name') }}" required autofocus>
+      @error('name') <div class="text-danger small">{{ $message }}</div> @enderror
+    </div>
 
-        {{-- Slug (opsional, akan otomatis jika dikosongkan) --}}
-        <div class="mb-3">
-            <label for="slug" class="form-label">Slug (opsional)</label>
-            <input 
-                type="text" 
-                name="slug" 
-                id="slug" 
-                class="form-control" 
-                value="{{ old('slug') }}" 
-                placeholder="otomatis jika dikosongkan">
-            @error('slug') 
-                <div class="text-danger small">{{ $message }}</div> 
-            @enderror
-        </div>
+    {{-- Slug (readonly, auto) --}}
+    <div class="mb-3">
+      <label for="slug" class="form-label">Slug</label>
+      <input type="text" id="slug" class="form-control" value="{{ old('slug') }}" placeholder="terbentuk otomatis" readonly>
+    </div>
 
-        {{-- Deskripsi --}}
-        <div class="mb-3">
-            <label for="description" class="form-label">Deskripsi</label>
-            <textarea 
-                name="description" 
-                id="description" 
-                class="form-control" 
-                rows="3">{{ old('description') }}</textarea>
-            @error('description') 
-                <div class="text-danger small">{{ $message }}</div> 
-            @enderror
-        </div>
+    {{-- Thumbnail --}}
+    <div class="mb-3">
+      <label class="form-label">Thumbnail (jpg/png/webp, maks 2MB)</label>
+      <input type="file" name="thumbnail" id="thumbnail" class="form-control" accept="image/*">
+      @error('thumbnail') <div class="text-danger small">{{ $message }}</div> @enderror
 
-        <button type="submit" class="btn btn-success">Simpan</button>
-        <a href="{{ route('admin.categories.index') }}" class="btn btn-secondary">Batal</a>
-    </form>
+      <div class="mt-2" id="thumbPreviewWrap" style="display:none">
+        <img id="thumbPreview" class="img-fluid rounded border" style="max-height:160px" alt="Preview">
+      </div>
+    </div>
+
+    {{-- Deskripsi --}}
+    <div class="mb-3">
+      <label for="description" class="form-label">Deskripsi</label>
+      <textarea name="description" id="description" class="form-control" rows="3">{{ old('description') }}</textarea>
+      @error('description') <div class="text-danger small">{{ $message }}</div> @enderror
+    </div>
+
+    <button class="btn btn-success">Simpan</button>
+    <a href="{{ route('admin.categories.index') }}" class="btn btn-secondary">Batal</a>
+  </form>
 </div>
 @endsection
 
 @push('scripts')
 <script>
-document.addEventListener('DOMContentLoaded', function () {
-    const nameInput = document.querySelector('input[name="name"]');
-    const slugInput = document.querySelector('input[name="slug"]');
+document.addEventListener('DOMContentLoaded', () => {
+  const nameEl = document.getElementById('name');
+  const slugEl = document.getElementById('slug');
+  const input  = document.getElementById('thumbnail');
+  const wrap   = document.getElementById('thumbPreviewWrap');
+  const img    = document.getElementById('thumbPreview');
 
-    // Auto-generate slug dari nama
-    nameInput.addEventListener('input', function () {
-        if (!slugInput.value) {
-            slugInput.value = nameInput.value
-                .toLowerCase()
-                .replace(/[^a-z0-9]+/g, '-')
-                .replace(/(^-|-$)/g, '');
-        }
+  const slugify = s => s
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/[^a-z0-9]+/g,'-')
+    .replace(/(^-|-$)/g,'')
+    .replace(/-+/g,'-');
+
+  const update = () => slugEl.value = slugify(nameEl.value || '');
+  nameEl.addEventListener('input', update);
+  update();
+
+  if (input) {
+    input.addEventListener('change', e => {
+      const f = e.target.files?.[0];
+      if (!f) return;
+      const url = URL.createObjectURL(f);
+      img.src = url; wrap.style.display = 'block';
     });
+  }
 });
 </script>
 @endpush

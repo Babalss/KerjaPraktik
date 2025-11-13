@@ -9,31 +9,26 @@ class ProductCategory extends Model
 {
     use HasFactory;
 
-    /**
-     * Atribut yang dapat diisi secara massal.
-     *
-     * @var array<int, string>
-     */
     protected $fillable = [
-        'name',
+        'name', 
         'slug',
         'description',
+        'thumbnail',  
     ];
 
-    /**
-     * Relasi ke kategori induk.
-     */
-    public function parent()
-    {
-        return $this->belongsTo(ProductCategory::class, 'parent_id');
-    }
-
-   
-    /**
-     * Relasi ke produk dalam kategori ini.
-     */
+ 
     public function products()
     {
         return $this->hasMany(Product::class, 'category_id');
+    }
+
+    public function scopeSearch($q, ?string $term)
+    {
+        if (!$term) return $q;
+        $term = "%{$term}%";
+        return $q->where(function ($s) use ($term) {
+            $s->where('name', 'LIKE', $term)
+              ->orWhere('slug', 'LIKE', $term);
+        });
     }
 }

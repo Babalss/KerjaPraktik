@@ -5,19 +5,17 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\ProductCategory;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class ProductController extends Controller
 {
-    /**
-     * Menampilkan daftar semua produk (dengan pencarian & pagination).
-     */
     public function index(Request $request)
     {
         $q = $request->get('q');
 
         $products = Product::with('category')
-            ->search($q)          // <- scope dari model
+            ->search($q)
             ->latest('id')
             ->paginate(10)
             ->withQueryString();
@@ -33,27 +31,29 @@ class ProductController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
-            'category_id'        => 'required|exists:product_categories,id',
-            'name'               => 'required|string|max:255',
-            'slug'               => 'nullable|string|max:255|unique:products,slug',
-            'short_description'  => 'nullable|string|max:500',
-            'long_description'   => 'nullable|string',
-            'status'             => 'in:active,inactive',
+        $data = $request->validate([
+            'category_id'        => ['required','exists:product_categories,id'],
+            'name'               => ['required','string','max:255'],
+            'slug'               => ['nullable','string','max:255','unique:products,slug'],
+            'thumbnail'          => ['nullable','image','mimes:jpg,jpeg,png,webp','max:2048'],
+            'short_description'  => ['nullable','string','max:500'],
+            'long_description'   => ['nullable','string'],
+            'status'             => ['in:active,inactive'],
         ]);
 
-        $slug = $request->filled('slug')
-            ? Str::slug($request->slug)
-            : Str::slug($request->name);
+        // Slug unik (dari input slug kalau ada, jika tidak dari name)
+        $slugSource = $data['slug'] ?? $data['name'];
+        $data['slug'] = Product::generateUniqueSlug($slugSource);
 
-        Product::create([
-            'category_id'        => $request->category_id,
-            'name'               => $request->name,
-            'slug'               => $slug,
-            'short_description'  => $request->short_description,
-            'long_description'   => $request->long_description,
-            'status'             => $request->status ?? 'active',
-        ]);
+        // Upload thumbnail
+        if ($request->hasFile('thumbnail')) {
+            $data['thumbnail'] = $request->file('thumbnail')
+                ->store('products', 'public'); // simpan di storage/app/public/products
+        }
+
+        $data['status'] = $data['status'] ?? 'active';
+
+        Product::create($data);
 
         return redirect()->route('admin.products.index')
             ->with('success', 'Produk berhasil ditambahkan');
@@ -71,27 +71,32 @@ class ProductController extends Controller
     {
         $product = Product::findOrFail($id);
 
-        $request->validate([
-            'category_id'        => 'required|exists:product_categories,id',
-            'name'               => 'required|string|max:255',
-            'slug'               => 'nullable|string|max:255|unique:products,slug,' . $product->id,
-            'short_description'  => 'nullable|string|max:500',
-            'long_description'   => 'nullable|string',
-            'status'             => 'in:active,inactive',
+        $data = $request->validate([
+            'category_id'        => ['required','exists:product_categories,id'],
+            'name'               => ['required','string','max:255'],
+            'slug'               => ['nullable','string','max:255', Rule::unique('products','slug')->ignore($product->id)],
+            'thumbnail'          => ['nullable','image','mimes:jpg,jpeg,png,webp','max:2048'],
+            'short_description'  => ['nullable','string','max:500'],
+            'long_description'   => ['nullable','string'],
+            'status'             => ['in:active,inactive'],
         ]);
 
-        $slug = $request->filled('slug')
-            ? Str::slug($request->slug)
-            : Str::slug($request->name);
+        // Slug unik (sinkron nama jika slug kosong)
+        $slugSource = $data['slug'] ?? $data['name'];
+        $data['slug'] = Product::generateUniqueSlug($slugSource, $product->id);
 
-        $product->update([
-            'category_id'        => $request->category_id,
-            'name'               => $request->name,
-            'slug'               => $slug,
-            'short_description'  => $request->short_description,
-            'long_description'   => $request->long_description,
-            'status'             => $request->status ?? 'active',
-        ]);
+        // Upload thumbnail baru? hapus lama
+        if ($request->hasFile('thumbnail')) {
+            if ($product->thumbnail && Storage::disk('public')->exists($product->thumbnail)) {
+                Storage::disk('public')->delete($product->thumbnail);
+            }
+            $data['thumbnail'] = $request->file('thumbnail')
+                ->store('products', 'public');
+        }
+
+        $data['status'] = $data['status'] ?? 'active';
+
+        $product->update($data);
 
         return redirect()->route('admin.products.index')
             ->with('success', 'Produk berhasil diperbarui');
@@ -99,9 +104,21 @@ class ProductController extends Controller
 
     public function destroy($id)
     {
-        Product::findOrFail($id)->delete();
+        $product = Product::findOrFail($id);
+
+        if ($product->thumbnail && Storage::disk('public')->exists($product->thumbnail)) {
+            Storage::disk('public')->delete($product->thumbnail);
+        }
+        $product->delete();
 
         return redirect()->route('admin.products.index')
             ->with('success', 'Produk berhasil dihapus');
+    }
+
+    /** OPSIONAL: halaman publik detail produk (untuk tombol “Kunjungi”) */
+    public function show($slug)
+    {
+        $product = Product::with('category')->where('slug', $slug)->firstOrFail();
+        return view('products.show', compact('product'));
     }
 }

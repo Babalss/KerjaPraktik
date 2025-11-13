@@ -4,27 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Models\ProductCategory;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class ProductCategoryController extends Controller
 {
-    /**
-     * Menampilkan daftar semua kategori produk.
-     */
-    public function index(Request $request)
+    public function index(Request $r)
     {
-        $q = $request->get('q');
+        $q = $r->get('q');
 
         $categories = ProductCategory::query()
-            ->when(
-                $q,
-                fn($query) =>
-                $query->where(
-                    fn($x) =>
-                    $x->where('name', 'like', "%{$q}%")
-                        ->orWhere('slug', 'like', "%{$q}%")
-                )
-            )
+            ->search($q)
             ->orderByDesc('id')
             ->paginate(10)
             ->withQueryString();
@@ -32,89 +22,110 @@ class ProductCategoryController extends Controller
         return view('admin.categories.index', compact('categories', 'q'));
     }
 
-    /**
-     * Menampilkan form untuk membuat kategori baru.
-     */
     public function create()
     {
+        // tanpa parent
         return view('admin.categories.create');
     }
 
-    /**
-     * Menyimpan kategori baru ke database.
-     */
-    public function store(Request $request)
+    public function store(Request $r)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'slug' => 'nullable|string|max:255|unique:product_categories,slug',
-            'description' => 'nullable|string',
+        $data = $r->validate([
+            'name'        => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'thumbnail'   => ['nullable', 'file', 'image', 'max:2048'], // 2MB
         ]);
 
-        // Jika slug kosong, buat otomatis dari name
-        $slug = $request->filled('slug')
-            ? Str::slug($request->slug)
-            : Str::slug($request->name);
+        // slug auto-unik dari name
+        $data['slug'] = $this->uniqueSlug(Str::slug($data['name']));
 
-        ProductCategory::create([
-            'name'        => $request->name,
-            'slug'        => $slug,
-            'description' => $request->description,
-        ]);
+        // upload thumbnail jika ada
+        if ($r->hasFile('thumbnail')) {
+            $file = $r->file('thumbnail');
+            $filename = time() . '-' . Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME))
+                . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('categories', $filename, 'public');
+            $data['thumbnail'] = $path; // simpan path relatif
+        }
 
-        return redirect()
-            ->route('admin.categories.index')
-            ->with('success', 'Kategori berhasil ditambahkan');
+        ProductCategory::create($data);
+
+        return redirect()->route('admin.categories.index')->with('success', 'Kategori berhasil ditambahkan');
     }
 
-    /**
-     * Menampilkan form untuk mengedit kategori.
-     */
     public function edit($id)
     {
         $category = ProductCategory::findOrFail($id);
-
         return view('admin.categories.edit', compact('category'));
     }
 
-    /**
-     * Memperbarui data kategori di database.
-     */
-    public function update(Request $request, $id)
+    public function update(Request $r, $id)
     {
         $category = ProductCategory::findOrFail($id);
 
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'slug' => 'nullable|string|max:255|unique:product_categories,slug,' . $category->id,
-            'description' => 'nullable|string',
+        $data = $r->validate([
+            'name'        => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'thumbnail'   => ['nullable', 'file', 'image', 'max:2048'],
         ]);
 
-        // Jika slug kosong, buat otomatis dari name
-        $slug = $request->filled('slug')
-            ? Str::slug($request->slug)
-            : Str::slug($request->name);
+        // slug auto-unik dari name (selalu ikut nama saat edit)
+        $base = Str::slug($data['name']);
+        $data['slug'] = $this->uniqueSlug($base, $category->id);
 
-        $category->update([
-            'name'        => $request->name,
-            'slug'        => $slug,
-            'description' => $request->description,
-        ]);
+        // ganti thumbnail jika upload baru
+        if ($r->hasFile('thumbnail')) {
+            if ($category->thumbnail && Storage::disk('public')->exists($category->thumbnail)) {
+                Storage::disk('public')->delete($category->thumbnail);
+            }
+            $file = $r->file('thumbnail');
+            $filename = time() . '-' . Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME))
+                . '.' . $file->getClientOriginalExtension();
+            $path = $file->storeAs('categories', $filename, 'public');
+            $data['thumbnail'] = $path;
+        }
 
-        return redirect()
-            ->route('admin.categories.index')
-            ->with('success', 'Kategori berhasil diperbarui');
+        $category->update($data);
+
+        return redirect()->route('admin.categories.index')->with('success', 'Kategori berhasil diperbarui');
+    }
+
+    public function destroy($id)
+    {
+        $cat = ProductCategory::findOrFail($id);
+
+        if ($cat->thumbnail && Storage::disk('public')->exists($cat->thumbnail)) {
+            Storage::disk('public')->delete($cat->thumbnail);
+        }
+
+        $cat->delete();
+
+        return redirect()->route('admin.categories.index')->with('success', 'Kategori berhasil dihapus');
     }
 
     /**
-     * Menghapus kategori dari database.
+     * Buat slug unik. Jika sudah ada, tambahkan -2, -3, dst.
      */
-    public function destroy($id)
+    private function uniqueSlug(string $base, ?int $ignoreId = null): string
     {
-        ProductCategory::findOrFail($id)->delete();
+        $slug = $base ?: 'kategori';
+        $i = 2;
 
-        return redirect()
-            ->route('admin.categories.index')
-            ->with('success', 'Kategori berhasil dihapus');
+        $exists = ProductCategory::where('slug', $slug)
+            ->when($ignoreId, fn($q) => $q->where('id', '!=', $ignoreId))
+            ->exists();
+
+        while ($exists) {
+            $candidate = $base . '-' . $i++;
+            $exists = ProductCategory::where('slug', $candidate)
+                ->when($ignoreId, fn($q) => $q->where('id', '!=', $ignoreId))
+                ->exists();
+            if (!$exists) {
+                $slug = $candidate;
+                break;
+            }
+        }
+
+        return $slug;
     }
 }
