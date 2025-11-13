@@ -12,8 +12,15 @@ class BlogPost extends Model
     protected $table = 'blog_posts';
 
     protected $fillable = [
-        'title','slug','excerpt','hero_image','content',
-        'status','published_at','author_id','category_id',
+        'title',
+        'slug',
+        'excerpt',
+        'hero_image',
+        'content',
+        'status',
+        'published_at',
+        'author_id',
+        'category_id',
     ];
 
     protected $casts = [
@@ -21,17 +28,22 @@ class BlogPost extends Model
     ];
 
     /**
-     * Hook untuk slug otomatis & set published_at
+     * Hook untuk slug otomatis & set published_at.
      */
     protected static function booted()
     {
         static::saving(function (BlogPost $post) {
-            // Slug otomatis jika kosong; pastikan unik
+            // Jika judul berubah, paksa slug ikut judul (unik).
+            if ($post->isDirty('title') && filled($post->title)) {
+                $post->slug = static::generateUniqueSlug($post->title, $post->id);
+            }
+
+            // Safety net: kalau slug masih kosong tapi ada judul.
             if (blank($post->slug) && filled($post->title)) {
                 $post->slug = static::generateUniqueSlug($post->title, $post->id);
             }
 
-            // Isi published_at otomatis saat status published dan belum ada tanggal
+            // Isi published_at otomatis saat status published dan belum ada tanggal.
             if ($post->status === 'published' && is_null($post->published_at)) {
                 $post->published_at = now();
             }
@@ -39,7 +51,7 @@ class BlogPost extends Model
     }
 
     /**
-     * Membuat slug unik: judul => slug, tambahkan -2, -3 jika bentrok
+     * Membuat slug unik dari judul. Tambah -2, -3 jika bentrok.
      */
     public static function generateUniqueSlug(string $title, ?int $ignoreId = null): string
     {
@@ -54,7 +66,7 @@ class BlogPost extends Model
             return $q->exists();
         };
 
-        if (!$exists($slug)) {
+        if (! $exists($slug)) {
             return $slug;
         }
 
@@ -62,6 +74,7 @@ class BlogPost extends Model
         while ($exists($base . '-' . $i)) {
             $i++;
         }
+
         return $base . '-' . $i;
     }
 

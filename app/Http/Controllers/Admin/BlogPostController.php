@@ -7,23 +7,25 @@ use App\Models\BlogPost;
 use App\Models\BlogCategory;
 use App\Models\BlogTag;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class BlogPostController extends Controller
 {
     /**
-     * Tampilkan daftar post blog
+     * Tampilkan daftar post blog.
      */
     public function index(Request $r)
     {
         $q = $r->get('q');
+
         $items = BlogPost::with(['category', 'author'])
-            ->when($q, fn($s) => $s->where(function ($qq) use ($q) {
-                $qq->where('title', 'like', "%$q%")
-                   ->orWhere('slug', 'like', "%$q%");
-            }))
+            ->when($q, function ($s) use ($q) {
+                $s->where(function ($qq) use ($q) {
+                    $qq->where('title', 'like', "%{$q}%")
+                       ->orWhere('slug', 'like', "%{$q}%");
+                });
+            })
             ->orderByDesc('id')
             ->paginate(10)
             ->withQueryString();
@@ -32,7 +34,7 @@ class BlogPostController extends Controller
     }
 
     /**
-     * Form tambah post baru
+     * Form tambah post baru.
      */
     public function create()
     {
@@ -44,26 +46,26 @@ class BlogPostController extends Controller
     }
 
     /**
-     * Simpan post baru ke database
+     * Simpan post baru ke database.
      */
     public function store(Request $r)
     {
         $data = $r->validate([
             'title'        => ['required', 'string', 'max:200'],
-            'slug'         => ['nullable', 'string', 'max:200', 'unique:blog_posts,slug'],
+            // slug tidak divalidasi, di-generate otomatis dari title
             'excerpt'      => ['nullable', 'string'],
             'hero_image'   => ['nullable', 'file', 'image', 'max:2048'],
             'content'      => ['required', 'string'],
             'status'       => ['required', 'in:draft,published'],
             'published_at' => ['nullable', 'date'],
             'category_id'  => ['required', 'exists:blog_categories,id'],
-            'tag_ids'      => ['array'],
+            'tag_ids'      => ['nullable', 'array'],
             'tag_ids.*'    => ['integer', 'exists:blog_tags,id'],
         ]);
 
         $data['author_id'] = auth()->id();
 
-        // Upload gambar (opsional)
+        // Upload gambar hero (opsional)
         if ($r->hasFile('hero_image')) {
             $file = $r->file('hero_image');
             $filename = time() . '-' . Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME))
@@ -72,14 +74,16 @@ class BlogPostController extends Controller
             $data['hero_image'] = $path;
         }
 
-        $post = BlogPost::create($data);
+        $post = BlogPost::create($data); // slug akan diisi di hook saving()
         $post->tags()->sync($r->input('tag_ids', []));
 
-        return redirect()->route('admin.blog.posts.index')->with('ok', 'Post berhasil dibuat.');
+        return redirect()
+            ->route('admin.blog.posts.index')
+            ->with('ok', 'Post berhasil dibuat.');
     }
 
     /**
-     * Form edit
+     * Form edit.
      */
     public function edit(BlogPost $post)
     {
@@ -92,28 +96,29 @@ class BlogPostController extends Controller
     }
 
     /**
-     * Update data post
+     * Update data post.
      */
     public function update(Request $r, BlogPost $post)
     {
         $data = $r->validate([
             'title'        => ['required', 'string', 'max:200'],
-            'slug'         => ['nullable', 'string', 'max:200', Rule::unique('blog_posts', 'slug')->ignore($post->id)],
+            // slug tetap otomatis, tidak dari input user
             'excerpt'      => ['nullable', 'string'],
             'hero_image'   => ['nullable', 'file', 'image', 'max:2048'],
             'content'      => ['required', 'string'],
             'status'       => ['required', 'in:draft,published'],
             'published_at' => ['nullable', 'date'],
             'category_id'  => ['required', 'exists:blog_categories,id'],
-            'tag_ids'      => ['array'],
+            'tag_ids'      => ['nullable', 'array'],
             'tag_ids.*'    => ['integer', 'exists:blog_tags,id'],
         ]);
 
-        // Jika upload gambar baru, hapus yang lama
+        // Ganti gambar hero jika upload baru
         if ($r->hasFile('hero_image')) {
             if ($post->hero_image && Storage::disk('public')->exists($post->hero_image)) {
                 Storage::disk('public')->delete($post->hero_image);
             }
+
             $file = $r->file('hero_image');
             $filename = time() . '-' . Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME))
                 . '.' . $file->getClientOriginalExtension();
@@ -121,20 +126,23 @@ class BlogPostController extends Controller
             $data['hero_image'] = $path;
         }
 
-        $post->update($data);
+        $post->update($data); // kalau title berubah, slug ikut diubah di hook saving()
         $post->tags()->sync($r->input('tag_ids', []));
 
-        return redirect()->route('admin.blog.posts.index')->with('ok', 'Post berhasil diperbarui.');
+        return redirect()
+            ->route('admin.blog.posts.index')
+            ->with('ok', 'Post berhasil diperbarui.');
     }
 
     /**
-     * Hapus post
+     * Hapus post.
      */
     public function destroy(BlogPost $post)
     {
         if ($post->hero_image && Storage::disk('public')->exists($post->hero_image)) {
             Storage::disk('public')->delete($post->hero_image);
         }
+
         $post->delete();
 
         return back()->with('ok', 'Post berhasil dihapus.');
